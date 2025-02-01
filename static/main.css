@@ -35,3 +35,37 @@ header h2 {
     font-size: 125%;
 }
 
+/* Phase 3: Styling Links, Forms, and Tables */
+nav a {
+    text-decoration: none;
+}
+nav a:hover {
+    text-decoration: underline;
+}
+
+main table {
+    width: 100%;
+}
+.col_num {
+    text-align: right;
+}
+table th {
+    text-align: left;
+}
+
+.login td {
+    padding-bottom: 1rem;
+    width: 50%;
+}
+.login_input {
+    text-align: right;
+}
+.login tfoot {
+    text-align: center;
+}
+.login input, .login label {
+    width: 100%;
+}
+.login button {
+    width: 50%;
+}

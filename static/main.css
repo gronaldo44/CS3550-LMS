@@ -31,6 +31,7 @@ header h2 {
     font-size: 100%;
 }
 
-.login, .login input {
+.login, .login input, .login button {
     font-size: 125%;
 }
+

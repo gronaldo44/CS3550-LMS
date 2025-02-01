@@ -70,3 +70,57 @@ table th {
 .login button {
     width: 50%;
 }
+
+/* Phase 4: Borders, backgrounds, and whitespace */
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+nav {
+    background-color: #ddd;
+    box-shadow: 0 0 5px gray;
+    margin-bottom: 3rem;
+}
+nav h1 {
+    color: black;
+    /* it's already bolded from phase 2 */
+}
+nav a {
+    color: #444;
+    font-weight: 400;
+}
+
+.action_box {
+    background-color: #b1c3de;
+    border: 3px solid #204a87;
+    padding: 0 1rem;
+}
+
+nav div {
+    padding: 0.5rem 1rem;
+}
+nav h1, nav a{
+    padding: 0;
+    margin: 0;
+}
+header, main {
+    margin: 0rem 1rem;
+}
+
+main p, main ul {
+    margin-bottom: 1rem;
+}
+main h2, main table, .action_box {
+    margin: 1rem 0rem;
+}
+
+header h1 {
+    border-bottom: 1px solid #ddd;
+    margin: 0;
+}
+header h2 {
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 1rem;
+}

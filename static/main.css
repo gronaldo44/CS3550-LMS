@@ -1,1 +1,36 @@
-* {color: yellow;}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@100;400&display=swap');
+
+
+body {
+    font-family: "IBM Plex Sans", sans-serif;
+    line-height: 1.25;
+}
+code {
+    font-family: "IBM Plex Mono", monospace;
+}
+
+table {
+    line-height: 1.5;
+}
+
+nav {
+    font-size: 125%;
+}
+nav a {
+    color: #444;
+}
+nav h1 {
+    font-weight: 700;
+}
+
+header h1 {
+    font-size: 150%;
+}
+header h2 {
+    font-size: 100%;
+}
+
+.login, .login input {
+    font-size: 125%;
+}

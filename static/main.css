@@ -124,3 +124,27 @@ header h2 {
     padding-top: 0;
     padding-bottom: 1rem;
 }
+
+/* Phase 5: Flexible Box Layout */
+nav div {
+    display: flex;
+    align-items: center;
+}
+nav h1 {
+    margin-right: 1rem;
+}
+nav a:last-child {
+    margin-left: auto;
+}
+
+.action_box p{
+    display: flex;
+    justify-content: space-between;
+}
+
+@media (min-width: 52rem) {
+	nav div, header, main {
+		width: 50rem;
+		margin: 0 auto;
+	}
+}

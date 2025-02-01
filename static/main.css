@@ -19,6 +19,10 @@ nav {
 }
 nav a {
     color: #444;
+    text-decoration: none;
+}
+nav a:hover {
+    text-decoration: underline;
 }
 nav h1 {
     font-weight: 700;
@@ -34,4 +38,30 @@ header h2 {
 .login, .login input, .login button {
     font-size: 125%;
 }
+.login td{
+    padding-bottom: 1rem;
+    width: 50%;
+}
+.login_input{
+    text-align: right;
+}
+.login tfoot {
+    text-align: center;
+}
+/* make each part of the login half as wide as main content*/
+.login input, .login label{
+    width: 100%;
+}
+.login button {
+    width: 50%;
+}
 
+main table {
+    width: 100%;
+}
+table th {
+    text-align: left;
+}
+.col_num {
+    text-align: right;
+}

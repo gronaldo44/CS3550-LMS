@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="UTF-8">
+<title>Assignment 1 (HTML) - CS 3550</title>
+<link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+<link rel="stylesheet" type="text/css" href="/static/main.css">
+
+<nav>
+    <div>
+        <h1>CS 3550</h1>
+        <a href="index.html">Assignments</a>
+        <a href="profile.html" title="View all assignments assigned to you">Profile</a>
+    </div>
+</nav>
+
+<header>
+    <h1>Log in</h1>
+</header>
+
+<main>
+    <form action="profile.html" method="post" class="login">
+        <table>
+            <tbody>
+                <tr>
+                    <td><label for="username">Username:</label></td>
+                    <td class="login_input"><input id="username" name="username" tabindex="1" autofocus required></td>
+                </tr>
+                <tr>
+                    <td><label for="password">Password:</label></td>
+                    <td class="login_input"><input id="password" type="password" name="password" tabindex="2" required></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2"><button type="submit" tabindex="3">Log in</button></td>
+                </tr>
+            </tfoot>
+        </table>
+    </form>
+</main>

@@ -1,23 +1,16 @@
 <!doctype html>
 <meta charset="UTF-8">
-<title>Assignment 1 (HTML) - CS 3550</title>
 <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="/static/main.css">
 
-<nav>
-    <div>
-        <h1>CS 3550</h1>
-        <a href="index.html">Assignments</a>
-        <a href="profile.html" title="View all assignments assigned to you">Profile</a>
-    </div>
-</nav>
+{% include "header.html" with title="Login" %}
 
 <header>
     <h1>Log in</h1>
 </header>
 
 <main>
-    <form action="profile.html" method="post" class="login">
+    <form action="/profile/" method="post" class="login">
         <table>
             <tbody>
                 <tr>

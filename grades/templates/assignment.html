@@ -1,16 +1,9 @@
 <!doctype html>
 <meta charset="UTF-8">
-<title>{{ assignment.title }} - CS 3550</title>
 <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="/static/main.css">
 
-<nav>
-    <div>
-        <h1>CS 3550</h1>
-        <a href="index.html">Assignments</a>
-        <a href="profile.html" title="View all assignments assigned to you">Profile</a>
-    </div>
-</nav>
+{% include "header.html" with title=assignment.title|add:" - CS 3550" %}
 
 <header>
     <h1>{{ assignment.title }}</h1>

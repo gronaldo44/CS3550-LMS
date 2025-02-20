@@ -1,16 +1,9 @@
 <!doctype html>
 <meta charset="UTF-8">
-<title>Assignment 1 (HTML) - CS 3550</title>
 <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="/static/main.css">
 
-<nav>
-    <div>
-        <h1>CS 3550</h1>
-        <a href="index.html">Assignments</a>
-        <a href="profile.html" title="View all assignments assigned to you">Profile</a>
-    </div>
-</nav>
+{% include "header.html" with title="Profile" %}
 
 <header>
     <h1>Your grades</h1>
@@ -18,7 +11,7 @@
 
 <main>
     <div class="action_box">
-        <p>Currently logged in as ta1. <a href="login.html" role="button">Log out</a></p>
+        <p>Currently logged in as ta1. <a href="/profile/login/" role="button">Log out</a></p>
     </div>
     <table>
         <thead>
@@ -28,34 +21,12 @@
             </tr>
         </thead>
         <tbody>
+            {% for data in assignments_data %}
             <tr>
-                <td><a href="assignment.html">Github username</td>
-                <td class="col_num">2/3</td>
+                <td><a href="/{{ data.assignment.id }}/">{{ data.assignment.title }}</a></td>
+                <td class="col_num">{{ data.my_graded }}/{{ data.my_submissions }}</td>
             </tr>
-            <tr>
-                <td><a href="assignment.html">Homework 1 (HTML)</td>
-                <td class="col_num">1/2</td>
-            </tr>
-            <tr>
-                <td><a href="assignment.html">Homework 2 (CSS)</td>
-                <td class="col_num">0/1</td>
-            </tr>
-            <tr>
-                <td><a href="assignment.html">Homework 3 (Backend)</td>
-                <td class="col_num">0/0</td>
-            </tr>
-            <tr>
-                <td><a href="assignment.html">Homework 4 (Deploy)</td>
-                <td class="col_num">0/0</td>
-            </tr>
-            <tr>
-                <td><a href="assignment.html">Homework 5 (Permissions)</td>
-                <td class="col_num">0/0</td>
-            </tr>
-            <tr>
-                <td><a href="assignment.html">Homework 6 (JS)</td>
-                <td class="col_num">0/0</td>
-            </tr>
+            {% endfor %}
         </tbody>
     </table>
 </main>

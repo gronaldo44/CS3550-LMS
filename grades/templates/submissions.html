@@ -1,24 +1,17 @@
 <!doctype html>
 <meta charset="UTF-8">
-<title>Assignment 1 (HTML) - CS 3550</title>
 <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 <link rel="stylesheet" type="text/css" href="/static/main.css">
 
-<nav>
-    <div>
-        <h1>CS 3550</h1>
-        <a href="index.html">Assignments</a>
-        <a href="profile.html" title="View all assignments assigned to you">Profile</a>
-    </div>
-</nav>
+{% include "header.html" with title=a_title %}
 
 <header>
-    <h1>Homework 1 (HTML)</h1>
-    <h2>All grades out of 100</h2>
+    <h1>{{ a_title }}</h1>
+    <h2>All grades out of {{ a_points }}</h2>
 </header>
 
 <main>
-    <form action="submissions.html" method="post">
+    <form action="" method="post">
         <table>
             <thead>
                 <tr>
@@ -28,19 +21,16 @@
                 </tr>
             </thead>
             <tbody>
+                {% for data in submissions_data %}
                 <tr>
-                    <td><label for="grade_s1">s1</label></td>
-                    <td><a href="#">Submission</a></td>
-                    <td><input type="number" id="grade_s1" name="grade_s1" tabindex="1" autofocus required></td>
+                    <td><label for="grade_{{ data.student }}">{{ data.student }}</label></td>
+                    <td><a href="{{ data.file }}">Submission</a></td>
+                    <td><input type="number" id="grade_{{ data.student }}" name="grade_{{ data.student }}" value="{{ data.score }}" required></td>
                 </tr>
-                <tr>
-                    <td><label for="grade_s2">s2</label></td>
-                    <td><a href="#">Submission</a></td>
-                    <td><input type="number" id="grade_s2" name="grade_s2" tabindex="2" required></td>
-                </tr>
+                {% endfor %}
             </tbody>
         </table>
         <button type="submit" tabindex="3">Submit</button>
-        <a href="assignment.html">Back to assignment</a>
+        <a href="./">Back to assignment</a>
     </form>
 </main>

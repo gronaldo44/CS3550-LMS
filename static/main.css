@@ -64,7 +64,7 @@ table th {
 .login tfoot {
     text-align: center;
 }
-.login input, .login label {
+input, .login label {
     width: 100%;
 }
 .login button {
@@ -147,4 +147,13 @@ nav a:last-child {
 		width: 50rem;
 		margin: 0 auto;
 	}
+}
+
+/* Homework 4 changes here */
+output {
+    color: red;
+    font-weight: 700;
+}
+input:invalid {
+    border: 2px solid red;
 }

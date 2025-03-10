@@ -13,6 +13,9 @@
 <main>
     <form action="/{{ a_id }}/submissions/" method="post">
         {% csrf_token %}
+        {% for e in generic_errors %}
+        <output>{{ e.msg }}</output>
+        {% endfor %}
         <table>
             <thead>
                 <tr>
@@ -24,16 +27,19 @@
             <tbody>
                 {% for data in submissions_data %}
                 <tr>
-                    <td><label for="grade_{{ data.student }}">{{ data.student }}</label></td>
+                    <td><label for="grade-{{ data.id }}">{{ data.student }}</label></td>
                     <td><a href="{{ data.file }}">Submission</a></td>
-                    <td><input type="number" id="grade_{{ data.student }}" name="grade_{{ data.student }}"
-                            value="{{ data.score }}" required></td>
+                    <td><input type="number" min="0" max="{{ a_points }}" step="0.01" id="grade-{{ data.id }}"
+                            name="grade-{{ data.id }}" value="{{ data.score }}"></td>
+                    {% if data.error_msg %}
+                    <td><output>{{ data.error_msg }}</output></td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
             <tfoot>
-                <tr colspan="3">
-                    <td>
+                <tr>
+                    <td colspan="3">
                         <button type="submit" tabindex="3">Submit</button>
                         <a href="/{{ a_id }}/">Back to assignment</a>
                     </td>

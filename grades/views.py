@@ -1,8 +1,10 @@
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from . import models
+import logging
 
 # Create your views here.
 def index(request):
@@ -26,47 +28,106 @@ def assignment(request, assignment_id):
     total_students = models.Group.objects.get(name="Students").user_set.count()
 
     # call template
-    submissions_dictionary = {
+    context = {
         "assignment": a,
         "total_submissions": total_submissions,
         "my_submissions": my_submissions,
         "total_students": total_students
     }
-    return render(request, "assignment.html", submissions_dictionary)
+    return render(request, "assignment.html", context)
 
 def submissions(request, assignment_id):
+    errors = {}
+    generic_errors = []
     if request.method == "POST":
-        return redirect(f"/{assignment_id}/submissions/")
+        _update_grades(request, assignment_id, errors, generic_errors)
+        if not errors and not generic_errors:
+            return redirect(f"/{assignment_id}/submissions/")
     
     # collect data
     a = get_object_or_404(models.Assignment, id=assignment_id)
     my_user = get_object_or_404(models.User, username="g")   # hard-coded login
     my_submissions = a.submission_set.filter(grader=my_user).order_by("author__username")
 
+    # # debug
+    # errors[1] = "Testing"
+    # generic_errors.append({
+    #     "msg": "Testing"
+    # })
+
     submissions_data = []
     for s in my_submissions:
-        student = s.author.get_full_name()
-        file = s.file.url
-        score = s.score
-
+        s_error = errors[s.id] if s.id in errors else ""
         submissions_data.append({
-            "student": student,
-            "file": file,
-            "score": score
+            "student": s.author.get_full_name(),
+            "file": s.file.url,
+            "score": s.score,
+            "id": s.id,
+            "error_msg": s_error
         })
 
-    # debug
-    #print("Submissions Data: ", submissions_data)
-    #print("first username: ", submissions_data[0]["student"])
-
     # call template
-    submissions_dictionary = {
+    context = {
         "a_id": a.id,
         "a_title": a.title,
         "a_points": a.points,
-        "submissions_data": submissions_data
+        "submissions_data": submissions_data,
+        "generic_errors": generic_errors
     }
-    return render(request, "submissions.html", submissions_dictionary)
+    return render(request, "submissions.html", context)
+
+def _update_grades(request, assignment_id, errors, generic_errors):
+    updates = []
+    for post_key in request.POST:
+        # Ignore POSTs not related to grading submissions
+        if not post_key.startswith("grade-"):
+            logging.getLogger(__name__).info(f"POST \"{post_key}\" was ignored when updating grades.")
+            continue
+        
+        # Get submission id
+        s_id = int(post_key.removeprefix("grade-"))
+        
+        # Get this submission from db
+        try:
+            s = get_object_or_404(models.Submission, id=s_id)
+        except Http404:
+            generic_errors.append({
+                "msg": f"Submission {s_id} not found in db."
+            })
+            logging.getLogger(__name__).warning(f"Submission {s_id} not found in db.")
+            continue
+            
+        # Check if an assignment exists for this submission
+        try:
+            assignment_exists = get_object_or_404(models.Assignment, id=assignment_id)
+            my_user_exists = get_object_or_404(models.User, username="g")  # hard-coded login
+            get_object_or_404(models.Submission, id=s_id, assignment=assignment_exists, 
+                              grader=my_user_exists)
+        except Http404:
+            errors[s_id] = "Assignment not found for this submission."
+            logging.getLogger(__name__).warning(errors[s_id])
+            continue
+        
+        # Update this submission's score
+        newScore = request.POST[post_key]
+        if newScore == "":
+            s.score = None
+        else:
+            try:
+                # Make sure newScore is a valid number
+                newScore = Decimal(newScore).quantize(Decimal('0.01'))
+                if newScore < 0 or newScore > assignment_exists.points:
+                    raise ValueError("Score must be a number between 0 and max assignment points")
+                s.score = Decimal(newScore)
+            except (InvalidOperation, ValueError):
+                errors[s_id] = "Score must be a number between 0 and max points for this assignment."
+                logging.getLogger(__name__).warning(errors[s_id])
+                continue
+        # Queue this update  
+        updates.append(s)
+    
+    # Update database
+    models.Submission.objects.bulk_update(updates, ['score'])
 
 def profile(request):
     # collect data
@@ -88,10 +149,10 @@ def profile(request):
         })
 
     # Call template
-    data_dictionary = {
+    context = {
         "assignments_data": assignments_data
     }
-    return render(request, "profile.html", data_dictionary)
+    return render(request, "profile.html", context)
 
 def login_form(request):
     return render(request, "login.html")

@@ -11,10 +11,11 @@ class Assignment(models.Model):
 
     def __str__(self):
         return (f"Assignment: {self.title} "
-        f"| Description: {len(self.description)} characters "
-        f"| Deadline: {self.deadline.strftime('%Y-%m-%d %H:%M:%S')} "
-        f"| Points: {self.points} "
-        f"| Weight: {self.weight}")
+                f"| ID: {self.id}"
+                f"| Description: {len(self.description)} characters "
+                f"| Deadline: {self.deadline.strftime('%Y-%m-%d %H:%M:%S')} "
+                f"| Max Points: {self.points} "
+                f"| Weight: {self.weight}")
 
 class Submission(models.Model):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
@@ -24,7 +25,8 @@ class Submission(models.Model):
     score = models.DecimalField(max_digits=5, decimal_places=2, null=True)
 
     def __str__(self):
-        return (f"Submission for '{self.assignment.title}' by {self.author.username} "
-        f"| File: {self.file.name.split('/')[-1]} "
-        f"| Grader: {self.grader.username if self.grader else 'Not Assigned'} "
-        f"| Score: {self.score if self.score is not None else 'Not Graded'}")
+        return (f"Submission for '[id: {self.assignment.id}] {self.assignment.title}' by {self.author.get_full_name()} "
+                f"| ID: {self.id}"
+                f"| File: {self.file.name.split('/')[-1]} "
+                f"| Grader: {self.grader.get_full_name() if self.grader else 'Not Assigned'} "
+                f"| Score: {self.score if self.score is not None else 'Not Graded'}")

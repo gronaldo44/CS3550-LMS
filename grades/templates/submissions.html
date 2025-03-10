@@ -13,9 +13,11 @@
 <main>
     <form action="/{{ a_id }}/submissions/" method="post">
         {% csrf_token %}
-        {% for e in generic_errors %}
-        <output>{{ e.msg }}</output>
-        {% endfor %}
+        <ul>
+            {% for e in generic_errors %}
+            <li><output>{{ e.msg }}</output></li>
+            {% endfor %}
+        </ul>  
         <table>
             <thead>
                 <tr>

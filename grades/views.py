@@ -20,23 +20,70 @@ def index(request):
     return render(request, "index.html", assignments_dictionary)
 
 def assignment(request, assignment_id):
-    # collect data
+    # Handle submit-assignment form POSTs
+    if request.method == "POST":
+        _submit_assignment(request, assignment_id)
+        return redirect(f"/{assignment_id}/")
+    
+
     a = get_object_or_404(models.Assignment, id=assignment_id)
+    # collect data for grader action card
     total_submissions = a.submission_set.count()
     my_user = get_object_or_404(models.User, username="g")   # hard-coded login
-    my_submissions = a.submission_set.filter(grader=my_user).count()
+    grader_submissions_count = a.submission_set.filter(grader=my_user).count()
     total_students = models.Group.objects.get(name="Students").user_set.count()
+    # collect data for student action card
+    my_user = get_object_or_404(models.User, username="a")  # hard-coded login
+    student_submission_set = a.submission_set.filter(author=my_user)
+    if student_submission_set.exists():
+        student_submission = student_submission_set[0].file.name.split('/')[-1]
+    else:
+        student_submission = ""
 
     # call template
     context = {
         "assignment": a,
+        "student_submission": student_submission,
         "total_submissions": total_submissions,
-        "my_submissions": my_submissions,
+        "grader_submissions_count": grader_submissions_count,
         "total_students": total_students
     }
     return render(request, "assignment.html", context)
 
+def _submit_assignment(request, assignment_id):
+    # get user's submissions to this assignment
+    a = get_object_or_404(models.Assignment, id=assignment_id)
+    my_grader = get_object_or_404(models.User, username="g")    # hard-coded login
+    my_user = get_object_or_404(models.User, username="a")  # hard-coded login
+    my_user_old_submissions = a.submission_set.filter(author=my_user)
+    new_submission_file = request.FILES['assignment-submission']
+    
+    # Put new submission in the database
+    if my_user_old_submissions.exists():
+        # update existing submission
+        my_user_submission = my_user_old_submissions[0]
+        logging.getLogger(__name__).warning(
+            f"Updating existing submission {my_user_submission.file.name.split('/')[-1]}"
+            f"to {new_submission_file.name.split('/')[-1]}"
+            )
+        my_user_submission.file = new_submission_file
+        my_user_submission.save()
+    else:
+        # create a new submission for this user
+        logging.getLogger(__name__).warning(
+            f"Creating new submission {new_submission_file.name.split('/')[-1]}"
+        )
+        new_submission = models.Submission.objects.create(
+            assignment = a,
+            author = my_user,
+            grader = my_grader,
+            file = request.FILES['assignment-submission'],
+            score = None
+        )
+        new_submission.save()
+
 def submissions(request, assignment_id):
+    # Handle grade-submissions form POSTs
     errors = {}
     generic_errors = []
     if request.method == "POST":
@@ -53,6 +100,9 @@ def submissions(request, assignment_id):
     # errors[1] = "Testing"
     # generic_errors.append({
     #     "msg": "Testing"
+    # })
+    # generic_errors.append({
+    #     "msg": "Testing2"
     # })
 
     submissions_data = []
@@ -81,7 +131,7 @@ def _update_grades(request, assignment_id, errors, generic_errors):
     for post_key in request.POST:
         # Ignore POSTs not related to grading submissions
         if not post_key.startswith("grade-"):
-            logging.getLogger(__name__).info(f"POST \"{post_key}\" was ignored when updating grades.")
+            logging.getLogger(__name__).warning(f"POST \"{post_key}\" was ignored when updating grades.")
             continue
         
         # Get submission id

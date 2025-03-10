@@ -7,13 +7,35 @@
 
 <header>
     <h1>{{ assignment.title }}</h1>
-    <h2>Due {{ assignment.deadline|date:"M d" }}, total of {{ assignment.points }} point{{ assignment.points|pluralize }}</h2>
+    <h2>Due {{ assignment.deadline|date:"M d" }}, total of {{ assignment.points }}
+        point{{ assignment.points|pluralize }}</h2>
 </header>
 
 <main>
     <div class="action_box">
+        {% if student_submission %}
+        <p>Current submission: {{ student_submission }}</p>
+        {% else %}
+        <p>No current submission</p>
+        {% endif %}
+        <form action="/{{ assignment.id }}/" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="file" name="assignment-submission">
+                            <button type="submit">Submit</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+    <div class="action_box">
         <p>Currently {{ total_submissions }}/{{ total_students }} submission{{ total_students|pluralize }}</p>
-        <p>{{ my_submissions }} submission{{ my_submissions|pluralize }} assigned to you <a href="/{{ assignment.id }}/submissions" title="Grade submissions">Grade</a></p>
+        <p>{{ grader_submissions_count }} submission{{ grader_submissions_count|pluralize }} assigned to you <a
+                href="/{{ assignment.id }}/submissions" title="Grade submissions">Grade</a></p>
     </div>
     <h2>Description</h2>
     {{ assignment.description|safe }}

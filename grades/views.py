@@ -57,6 +57,7 @@ def submissions(request, assignment_id):
 
     # call template
     submissions_dictionary = {
+        "a_id": a.id,
         "a_title": a.title,
         "a_points": a.points,
         "submissions_data": submissions_data

@@ -36,14 +36,17 @@ def assignment(request, assignment_id):
     my_user = get_object_or_404(models.User, username="a")  # hard-coded login
     student_submission_set = a.submission_set.filter(author=my_user)
     if student_submission_set.exists():
-        student_submission = student_submission_set[0].file.name.split('/')[-1]
+        student_submission_file = student_submission_set[0].file.url
+        student_submission_filename = student_submission_set[0].file.name.split('/')[-1]
     else:
-        student_submission = ""
+        student_submission_file = ""
+        student_submission_filename = ""
 
     # call template
     context = {
         "assignment": a,
-        "student_submission": student_submission,
+        "student_submission_file": student_submission_file,
+        "student_submission_filename": student_submission_filename,
         "total_submissions": total_submissions,
         "grader_submissions_count": grader_submissions_count,
         "total_students": total_students

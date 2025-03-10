@@ -137,7 +137,7 @@ nav a:last-child {
     margin-left: auto;
 }
 
-.action_box p{
+.action_box .assigned-submissions{
     display: flex;
     justify-content: space-between;
 }

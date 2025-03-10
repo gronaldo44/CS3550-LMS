@@ -21,7 +21,7 @@ class Submission(models.Model):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     grader = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='graded_set')
-    file = models.FileField(upload_to='submissions/')
+    file = models.FileField()
     score = models.DecimalField(max_digits=5, decimal_places=2, null=True)
 
     def __str__(self):

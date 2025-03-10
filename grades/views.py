@@ -1,8 +1,7 @@
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render
-from django.http import Http404
-from django.shortcuts import get_object_or_404
-from django.shortcuts import redirect
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
 from . import models
 import logging
 
@@ -209,3 +208,8 @@ def profile(request):
 
 def login_form(request):
     return render(request, "login.html")
+
+def show_upload(request, filename):
+    logging.getLogger(__name__).warning(f"Show Upload: {filename}")
+    submission = get_object_or_404(models.Submission, file__icontains=filename)
+    return HttpResponse(submission.file.open())

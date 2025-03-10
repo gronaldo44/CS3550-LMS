@@ -19,6 +19,7 @@ from django.urls import path
 from grades import views
 
 urlpatterns = [
+    path('uploads/<str:filename>', views.show_upload),
     path('admin/', admin.site.urls),
     path('', views.index),
     path('profile/', views.profile),

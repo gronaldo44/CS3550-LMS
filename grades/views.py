@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
 from . import models
 
 # Create your views here.
@@ -34,6 +35,9 @@ def assignment(request, assignment_id):
     return render(request, "assignment.html", submissions_dictionary)
 
 def submissions(request, assignment_id):
+    if request.method == "POST":
+        return redirect(f"/{assignment_id}/submissions/")
+    
     # collect data
     a = get_object_or_404(models.Assignment, id=assignment_id)
     my_user = get_object_or_404(models.User, username="g")   # hard-coded login

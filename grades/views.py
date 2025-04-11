@@ -2,6 +2,7 @@ from decimal import Decimal, InvalidOperation
 from django.shortcuts import render
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth import authenticate, login, logout
 from . import models
 import logging
 
@@ -188,6 +189,7 @@ def profile(request):
         raise Http404("No assignments found.")
     
     my_user = get_object_or_404(models.User, username="g")   # hard-coded login
+    username = request.user.get_full_name() if request.user.is_authenticated else "Guest"
 
     assignments_data = []
     for a in assignments:
@@ -202,12 +204,32 @@ def profile(request):
 
     # Call template
     context = {
-        "assignments_data": assignments_data
+        "assignments_data": assignments_data,
+        "username": username
     }
     return render(request, "profile.html", context)
 
 def login_form(request):
+    if request.method == "POST":
+        username = request.POST.get("username","")
+        password = request.POST.get("password","")
+        user = authenticate(
+            request,
+            username = username,
+            password = password
+        )
+        if user is not None:
+            print("login success")
+            login(request, user)
+            return redirect("/profile")
+        else:
+            print("login failed")
+            return render(request, "login.html")
     return render(request, "login.html")
+
+def logout_form(request):
+    logout(request)
+    return redirect("/profile/login")
 
 def show_upload(request, filename):
     logging.getLogger(__name__).warning(f"Show Upload: {filename}")

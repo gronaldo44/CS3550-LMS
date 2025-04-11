@@ -10,7 +10,8 @@
 </header>
 
 <main>
-    <form action="/profile/" method="post" class="login">
+    <form action="/profile/login/" method="post" class="login">
+        {% csrf_token %}
         <table>
             <tbody>
                 <tr>

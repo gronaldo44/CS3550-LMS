@@ -29,7 +29,9 @@ def index(request):
 def assignment(request, assignment_id):
     # Handle submit-assignment form POSTs
     if request.method == "POST":
-        _submit_assignment(request, assignment_id)
+        result = _submit_assignment(request, assignment_id)
+        if isinstance(result, HttpResponse):
+            return result
         return redirect(f"/{assignment_id}/")
     
 
@@ -106,6 +108,18 @@ def _submit_assignment(request, assignment_id):
     my_user = request.user
     my_user_old_submissions = a.submission_set.filter(author=my_user)
     new_submission_file = request.FILES['assignment-submission']
+    
+    # check for invalid files
+    error = _is_pdf(new_submission_file)
+    # rerender the page if an error occurred
+    if error:
+        context = {
+            "assignment": a,
+            "error": error,
+            "is_accepting_student_submission": a.deadline > timezone.now(),
+            "is_student": request.user.is_authenticated and _is_student(request.user)
+        }
+        return render(request, "assignment.html", context)
     
     # Put new submission in the database
     if my_user_old_submissions.exists():
@@ -331,10 +345,36 @@ def logout_form(request):
 def show_upload(request, filename):
     logging.getLogger(__name__).warning(f"Show Upload: {filename}")
     submission = get_object_or_404(models.Submission, file__icontains=filename)
-    return HttpResponse(submission.file.open())
+    file = submission.view_submission(request.user)
+    
+    # check for invalid files
+    error = _is_pdf(file)
+    if error:
+        raise Http404(error)
+    
+    response = HttpResponse(file.open(), content_type="application/pdf")
+    response["Content-Disposition"] = f"attachment; filename='{file.name.split('/')[-1]}'"
+    return response
 
 def _is_student(user):
     return user.groups.filter(name="Students").exists()
 
 def _is_ta(user):
     return user.groups.filter(name="Teaching Assistants").exists()
+
+def _is_pdf(file):
+    error = ""
+    
+    # check if the file is too large
+    if file.size > 64 * 1024 * 1024:
+        error = "File too large — maximum size is 64 MiB."
+    # check that it is a valid file type
+    if not file.name.lower().endswith(".pdf"):
+        error = "File type is invalid — file must be a pdf."
+    try:
+        if not next(file.chunks()).startswith(b'%PDF-'):
+            error = "File type is invalid — file is not a valid pdf."
+    except StopIteration:
+        error = "File is empty or unreadable."
+    # return any error that occurred
+    return error

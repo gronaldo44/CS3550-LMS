@@ -31,6 +31,12 @@ class Submission(models.Model):
         else:
             raise PermissionDenied("You do not have permission to change this grade")
 
+    def view_submission(self, user):
+        if user.is_superuser or user == self.grader or user == self.author:
+            return self.file
+        else:
+            raise PermissionDenied("You do not have permission to view this submission")
+
     def __str__(self):
         return (f"Submission for '[id: {self.assignment.id}] {self.assignment.title}' by {self.author.get_full_name()} "
                 f"| ID: {self.id}"

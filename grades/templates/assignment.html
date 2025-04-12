@@ -22,11 +22,12 @@
         {% if is_accepting_student_submission %}
         <form action="/{{ assignment.id }}/" method="post" enctype="multipart/form-data">
             {% csrf_token %}
+            <output>{{ error }}</output>
             <table>
                 <tbody>
                     <tr>
                         <td>
-                            <input type="file" name="assignment-submission">
+                            <input type="file" name="assignment-submission" accept="application/pdf">
                             <button type="submit">Submit</button>
                         </td>
                     </tr>

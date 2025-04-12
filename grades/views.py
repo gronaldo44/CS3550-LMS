@@ -1,9 +1,12 @@
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import Group
+from django.db.models import Count, Q
 from . import models
+from django.utils import timezone
 import logging
 
 # Create your views here.
@@ -28,8 +31,11 @@ def assignment(request, assignment_id):
 
     a = get_object_or_404(models.Assignment, id=assignment_id)
     my_user = request.user
+    student_submission_status_prefix = ""
     student_submission_file = ""
     student_submission_filename = ""
+    student_submission_status_suffix = ""
+    is_accepting_student_submission = a.deadline > timezone.now()
     total_submissions = None
     grader_submissions_count = None
     total_students = None
@@ -44,19 +50,40 @@ def assignment(request, assignment_id):
             total_students = models.Group.objects.get(name="Students").user_set.count()
         else:
             # collect data for student action card
-            student_submission_set = a.submission_set.filter(author=my_user)
-            if student_submission_set.exists():
-                student_submission_file = student_submission_set[0].file.url
-                student_submission_filename = student_submission_set[0].file.name.split('/')[-1]
+            student_submission = a.submission_set.filter(author=my_user).last()
+            if student_submission:
+                student_submission_file = student_submission.file.url
+                student_submission_filename = student_submission.file.name.split('/')[-1]
+                if student_submission.score is not None:
+                    # submitted, graded assignment
+                    student_submission_status_prefix = "Your submission, "
+                    x = student_submission.score
+                    y = a.points
+                    z = f"{(x / y) * 100:.2f}"
+                    student_submission_status_suffix = f", received {x}/{y} points ({z}%)"
+                elif a.deadline < timezone.now():
+                    # submitted, ungraded, past due assignment
+                    student_submission_status_prefix = "Your submission, "
+                    student_submission_status_suffix = ", is being graded"
+                else:
+                    # submitted, ungraded, not due assignment
+                    student_submission_status_prefix = "Your current submission is "
             else:
-                student_submission_file = ""
-                student_submission_filename = ""
-
+                if a.deadline > timezone.now():
+                    # not submitted, not due assignment
+                    student_submission_status_prefix = "No current submission"
+                else:
+                    # not submitted, past due assignmnet
+                    student_submission_status_prefix = "You did not submit this assignment and received 0 points"
+                    
     # call template
     context = {
         "assignment": a,
+        "student_submission_status_prefix": student_submission_status_prefix,
         "student_submission_file": student_submission_file,
         "student_submission_filename": student_submission_filename,
+        "student_submission_status_suffix": student_submission_status_suffix,
+        "is_accepting_student_submission": is_accepting_student_submission,
         "total_submissions": total_submissions,
         "grader_submissions_count": grader_submissions_count,
         "total_students": total_students,
@@ -65,10 +92,14 @@ def assignment(request, assignment_id):
     return render(request, "assignment.html", context)
 
 def _submit_assignment(request, assignment_id):
-    # get user's submissions to this assignment
     a = get_object_or_404(models.Assignment, id=assignment_id)
-    my_grader = get_object_or_404(models.User, username="g")    # hard-coded login
-    my_user = get_object_or_404(models.User, username="a")  # hard-coded login
+    
+    # check if this assignment is still accepting submissions
+    if a.deadline < timezone.now():
+        return HttpResponseBadRequest
+    
+    # get user's submissions to this assignment
+    my_user = request.user
     my_user_old_submissions = a.submission_set.filter(author=my_user)
     new_submission_file = request.FILES['assignment-submission']
     
@@ -84,6 +115,7 @@ def _submit_assignment(request, assignment_id):
         my_user_submission.save()
     else:
         # create a new submission for this user
+        my_grader = pick_grader(a)
         logging.getLogger(__name__).warning(
             f"Creating new submission {new_submission_file.name.split('/')[-1]}"
         )
@@ -95,6 +127,14 @@ def _submit_assignment(request, assignment_id):
             score = None
         )
         new_submission.save()
+        
+def pick_grader(assignment):
+    ta_group = Group.objects.get(name="Teaching Assistants")
+    return (
+        ta_group.user_set.annotate(
+            total_assigned = Count("graded_set")
+        ).order_by("total_assigned").first()
+    )
 
 def submissions(request, assignment_id):
     # Handle grade-submissions form POSTs
@@ -201,24 +241,55 @@ def profile(request):
     if not assignments.exists():
         raise Http404("No assignments found.")
     
-    my_user = get_object_or_404(models.User, username="g")   # hard-coded login
-    username = request.user.get_full_name() if request.user.is_authenticated else "Guest"
-
+    my_user = request.user
+    is_ta = False
+    total_max_points = 0
+    my_total_points = 0
     assignments_data = []
-    for a in assignments:
-        my_submissions = a.submission_set.filter(grader=my_user).count()
-        my_graded = a.submission_set.filter(grader=my_user, score__isnull=False).count()
-
-        assignments_data.append({
-            "assignment": a,
-            "my_submissions": my_submissions,
-            "my_graded": my_graded
-        })
+    if my_user.is_authenticated:
+        for a in assignments:
+            if my_user.is_superuser:
+                is_ta = True
+                my_submissions = a.submission_set.count()
+                my_graded = a.submission_set.filter(score__isnull=False).count()
+            elif not is_student(my_user):
+                is_ta = True
+                my_submissions = a.submission_set.filter(grader=my_user).count()
+                my_graded = a.submission_set.filter(grader=my_user, score__isnull=False).count()
+            else:
+                my_submissions = ""
+                student_submission = a.submission_set.filter(author=my_user).last()
+                if not student_submission:
+                    if a.deadline < timezone.now():
+                        total_max_points += a.points
+                        my_graded = "Missing"
+                    else:
+                        my_graded = "Not Due"
+                elif student_submission.score is not None:
+                    total_max_points += a.points
+                    my_total_points += student_submission.score
+                    my_graded = f"{(student_submission.score / a.points) * 100:.2f}%"
+                else:
+                    my_graded = "Ungraded"
+                
+            assignments_data.append({
+                "assignment": a,
+                "my_submissions": my_submissions,
+                "my_graded": my_graded
+            })
+            
+    # calculate final grade
+    final_grade = 0
+    if my_user.is_authenticated and not is_ta:
+        final_grade = f"{(my_total_points / total_max_points) * 100:.2f}%"
 
     # Call template
     context = {
         "assignments_data": assignments_data,
-        "username": username
+        "username": my_user.get_full_name() if my_user.is_authenticated else "",
+        "is_ta": is_ta,
+        "final_grade": final_grade,
+        "is_logged_in": my_user.is_authenticated
     }
     return render(request, "profile.html", context)
 

@@ -157,3 +157,8 @@ output {
 input:invalid {
     border: 2px solid red;
 }
+
+/* Homework 5 changes here */
+.current_grade td{
+    font-weight: 700;
+}

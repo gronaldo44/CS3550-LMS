@@ -15,10 +15,11 @@
     {% if is_student %}
     <div class="action_box">
         {% if student_submission_file %}
-        <p>Current submission: <a href="{{ student_submission_file }}">{{ student_submission_filename }}</a></p>
+        <p>{{ student_submission_status_prefix }}<a href="{{ student_submission_file }}">{{ student_submission_filename }}</a>{{ student_submission_status_suffix }}</p>
         {% else %}
-        <p>No current submission</p>
+        <p>{{ student_submission_status_prefix }}</p>
         {% endif %}
+        {% if is_accepting_student_submission %}
         <form action="/{{ assignment.id }}/" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <table>
@@ -32,6 +33,7 @@
                 </tbody>
             </table>
         </form>
+        {% endif %}
     </div>
     {% else %}
     <div class="action_box">

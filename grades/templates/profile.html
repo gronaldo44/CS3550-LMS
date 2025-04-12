@@ -11,8 +11,13 @@
 
 <main>
     <div class="action_box">
+        {% if is_logged_in %}
         <p>Currently logged in as {{ username }}. <a href="/profile/logout/" role="button">Log out</a></p>
+        {% else %}
+        <p>Currently not logged in. <a href="/profile/logout/" role="button">Log in</a></p>
+        {% endif %}
     </div>
+    {% if is_logged_in %}
     <table>
         <thead>
             <tr>
@@ -24,9 +29,22 @@
             {% for data in assignments_data %}
             <tr>
                 <td><a href="/{{ data.assignment.id }}/">{{ data.assignment.title }}</a></td>
+                {% if is_ta %}
                 <td class="col_num">{{ data.my_graded }}/{{ data.my_submissions }}</td>
+                {% else %}
+                <td class="col_num">{{ data.my_graded }}</td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
+        {% if not is_ta %}
+        <tfoot class="current_grade">
+            <tr>
+                <td>Final grade</td>
+                <td class="col_num">{{ final_grade }}</td>
+            </tr>
+        </tfoot>
+        {% endif %}
     </table>
+    {% endif %}
 </main>

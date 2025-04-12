@@ -27,20 +27,30 @@ def assignment(request, assignment_id):
     
 
     a = get_object_or_404(models.Assignment, id=assignment_id)
-    # collect data for grader action card
-    total_submissions = a.submission_set.count()
-    my_user = get_object_or_404(models.User, username="g")   # hard-coded login
-    grader_submissions_count = a.submission_set.filter(grader=my_user).count()
-    total_students = models.Group.objects.get(name="Students").user_set.count()
-    # collect data for student action card
-    my_user = get_object_or_404(models.User, username="a")  # hard-coded login
-    student_submission_set = a.submission_set.filter(author=my_user)
-    if student_submission_set.exists():
-        student_submission_file = student_submission_set[0].file.url
-        student_submission_filename = student_submission_set[0].file.name.split('/')[-1]
-    else:
-        student_submission_file = ""
-        student_submission_filename = ""
+    my_user = request.user
+    student_submission_file = ""
+    student_submission_filename = ""
+    total_submissions = None
+    grader_submissions_count = None
+    total_students = None
+    is_ta = False
+    
+    if my_user.is_authenticated:
+        if not is_student(my_user):
+            # collect data for grader action card
+            is_ta = True
+            total_submissions = a.submission_set.count()
+            grader_submissions_count = a.submission_set.filter(grader=my_user).count()
+            total_students = models.Group.objects.get(name="Students").user_set.count()
+        else:
+            # collect data for student action card
+            student_submission_set = a.submission_set.filter(author=my_user)
+            if student_submission_set.exists():
+                student_submission_file = student_submission_set[0].file.url
+                student_submission_filename = student_submission_set[0].file.name.split('/')[-1]
+            else:
+                student_submission_file = ""
+                student_submission_filename = ""
 
     # call template
     context = {
@@ -49,7 +59,8 @@ def assignment(request, assignment_id):
         "student_submission_filename": student_submission_filename,
         "total_submissions": total_submissions,
         "grader_submissions_count": grader_submissions_count,
-        "total_students": total_students
+        "total_students": total_students,
+        "is_student": not is_ta
     }
     return render(request, "assignment.html", context)
 
@@ -93,12 +104,6 @@ def submissions(request, assignment_id):
         _update_grades(request, assignment_id, errors, generic_errors)
         if not errors and not generic_errors:
             return redirect(f"/{assignment_id}/submissions/")
-    
-    # collect data
-    a = get_object_or_404(models.Assignment, id=assignment_id)
-    my_user = get_object_or_404(models.User, username="g")   # hard-coded login
-    my_submissions = a.submission_set.filter(grader=my_user).order_by("author__username")
-
     # # debug
     # errors[1] = "Testing"
     # generic_errors.append({
@@ -107,17 +112,25 @@ def submissions(request, assignment_id):
     # generic_errors.append({
     #     "msg": "Testing2"
     # })
-
+    
+    # collect data
+    a = get_object_or_404(models.Assignment, id=assignment_id)
+    my_user = request.user
     submissions_data = []
-    for s in my_submissions:
-        s_error = errors[s.id] if s.id in errors else ""
-        submissions_data.append({
-            "student": s.author.get_full_name(),
-            "file": s.file.url,
-            "score": s.score,
-            "id": s.id,
-            "error_msg": s_error
-        })
+    if my_user.is_authenticated:
+        if my_user.is_superuser:
+            my_submissions = a.submission_set.order_by("author__username")
+        elif not is_student(my_user):
+            my_submissions = a.submission_set.filter(grader=my_user).order_by("author__username")
+        for s in my_submissions:
+            s_error = errors[s.id] if s.id in errors else ""
+            submissions_data.append({
+                "student": s.author.get_full_name(),
+                "file": s.file.url,
+                "score": s.score,
+                "id": s.id,
+                "error_msg": s_error
+            })
 
     # call template
     context = {
@@ -235,3 +248,6 @@ def show_upload(request, filename):
     logging.getLogger(__name__).warning(f"Show Upload: {filename}")
     submission = get_object_or_404(models.Submission, file__icontains=filename)
     return HttpResponse(submission.file.open())
+
+def is_student(user):
+    return user.groups.filter(name="Students").exists()

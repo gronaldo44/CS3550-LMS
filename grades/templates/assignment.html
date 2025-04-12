@@ -12,6 +12,7 @@
 </header>
 
 <main>
+    {% if is_student %}
     <div class="action_box">
         {% if student_submission_file %}
         <p>Current submission: <a href="{{ student_submission_file }}">{{ student_submission_filename }}</a></p>
@@ -32,11 +33,13 @@
             </table>
         </form>
     </div>
+    {% else %}
     <div class="action_box">
         <p>Currently {{ total_submissions }}/{{ total_students }} submission{{ total_students|pluralize }}</p>
         <p class="assigned-submissions">{{ grader_submissions_count }} submission{{ grader_submissions_count|pluralize }} assigned to you <a
                 href="/{{ assignment.id }}/submissions" title="Grade submissions">Grade</a></p>
     </div>
+    {% endif %}
     <h2>Description</h2>
     {{ assignment.description|safe }}
 </main>

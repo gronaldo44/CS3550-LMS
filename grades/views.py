@@ -3,13 +3,16 @@ from django.shortcuts import render
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group
 from django.db.models import Count, Q
 from . import models
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 import logging
 
 # Create your views here.
+@login_required
 def index(request):
     # collect data
     assignments = models.Assignment.objects.all()
@@ -22,6 +25,7 @@ def index(request):
     }
     return render(request, "index.html", assignments_dictionary)
 
+@login_required
 def assignment(request, assignment_id):
     # Handle submit-assignment form POSTs
     if request.method == "POST":
@@ -42,7 +46,7 @@ def assignment(request, assignment_id):
     is_ta = False
     
     if my_user.is_authenticated:
-        if not is_student(my_user):
+        if not _is_student(my_user):
             # collect data for grader action card
             is_ta = True
             total_submissions = a.submission_set.count()
@@ -115,7 +119,7 @@ def _submit_assignment(request, assignment_id):
         my_user_submission.save()
     else:
         # create a new submission for this user
-        my_grader = pick_grader(a)
+        my_grader = _pick_grader(a)
         logging.getLogger(__name__).warning(
             f"Creating new submission {new_submission_file.name.split('/')[-1]}"
         )
@@ -128,7 +132,7 @@ def _submit_assignment(request, assignment_id):
         )
         new_submission.save()
         
-def pick_grader(assignment):
+def _pick_grader(assignment):
     ta_group = Group.objects.get(name="Teaching Assistants")
     return (
         ta_group.user_set.annotate(
@@ -136,6 +140,8 @@ def pick_grader(assignment):
         ).order_by("total_assigned").first()
     )
 
+@login_required
+@user_passes_test(lambda u: u.is_superuser or _is_ta(u))
 def submissions(request, assignment_id):
     # Handle grade-submissions form POSTs
     errors = {}
@@ -160,7 +166,7 @@ def submissions(request, assignment_id):
     if my_user.is_authenticated:
         if my_user.is_superuser:
             my_submissions = a.submission_set.order_by("author__username")
-        elif not is_student(my_user):
+        elif not _is_student(my_user):
             my_submissions = a.submission_set.filter(grader=my_user).order_by("author__username")
         for s in my_submissions:
             s_error = errors[s.id] if s.id in errors else ""
@@ -224,7 +230,7 @@ def _update_grades(request, assignment_id, errors, generic_errors):
                 newScore = Decimal(newScore).quantize(Decimal('0.01'))
                 if newScore < 0 or newScore > assignment_exists.points:
                     raise ValueError("Score must be a number between 0 and max assignment points")
-                s.score = Decimal(newScore)
+                s.change_grade(request.user, Decimal(newScore))
             except (InvalidOperation, ValueError):
                 errors[s_id] = "Score must be a number between 0 and max points for this assignment."
                 logging.getLogger(__name__).warning(errors[s_id])
@@ -235,6 +241,7 @@ def _update_grades(request, assignment_id, errors, generic_errors):
     # Update database
     models.Submission.objects.bulk_update(updates, ['score'])
 
+@login_required
 def profile(request):
     # collect data
     assignments = models.Assignment.objects.all()
@@ -252,7 +259,7 @@ def profile(request):
                 is_ta = True
                 my_submissions = a.submission_set.count()
                 my_graded = a.submission_set.filter(score__isnull=False).count()
-            elif not is_student(my_user):
+            elif not _is_student(my_user):
                 is_ta = True
                 my_submissions = a.submission_set.filter(grader=my_user).count()
                 my_graded = a.submission_set.filter(grader=my_user, score__isnull=False).count()
@@ -303,22 +310,31 @@ def login_form(request):
             password = password
         )
         if user is not None:
-            print("login success")
             login(request, user)
-            return redirect("/profile")
-        else:
-            print("login failed")
-            return render(request, "login.html")
-    return render(request, "login.html")
+            
+            next_url = request.POST["next"]
+            if url_has_allowed_host_and_scheme(next_url, None):
+                return redirect(next_url)
+            else:
+                return redirect("/")
+    
+    context = {
+        "next": request.GET.get("next", "/profile")
+    }
+    return render(request, "login.html", context)
 
 def logout_form(request):
     logout(request)
     return redirect("/profile/login")
 
+@login_required
 def show_upload(request, filename):
     logging.getLogger(__name__).warning(f"Show Upload: {filename}")
     submission = get_object_or_404(models.Submission, file__icontains=filename)
     return HttpResponse(submission.file.open())
 
-def is_student(user):
+def _is_student(user):
     return user.groups.filter(name="Students").exists()
+
+def _is_ta(user):
+    return user.groups.filter(name="Teaching Assistants").exists()

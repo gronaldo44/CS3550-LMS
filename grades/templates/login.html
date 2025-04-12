@@ -12,6 +12,7 @@
 <main>
     <form action="/profile/login/" method="post" class="login">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
         <table>
             <tbody>
                 <tr>

@@ -259,32 +259,36 @@ def profile(request):
     
     my_user = request.user
     is_ta = False
-    total_max_points = 0
-    my_total_points = 0
+    total_weight = 0
+    weight_score_sum = 0
     assignments_data = []
     if my_user.is_authenticated:
         for a in assignments:
             if my_user.is_superuser:
+                # admin
                 is_ta = True
                 my_submissions = a.submission_set.count()
                 my_graded = a.submission_set.filter(score__isnull=False).count()
             elif not _is_student(my_user):
+                # ta
                 is_ta = True
                 my_submissions = a.submission_set.filter(grader=my_user).count()
                 my_graded = a.submission_set.filter(grader=my_user, score__isnull=False).count()
             else:
+                # student
                 my_submissions = ""
                 student_submission = a.submission_set.filter(author=my_user).last()
                 if not student_submission:
                     if a.deadline < timezone.now():
-                        total_max_points += a.points
                         my_graded = "Missing"
+                        total_weight += a.weight
                     else:
                         my_graded = "Not Due"
                 elif student_submission.score is not None:
-                    total_max_points += a.points
-                    my_total_points += student_submission.score
-                    my_graded = f"{(student_submission.score / a.points) * 100:.2f}%"
+                    grade_ratio = student_submission.score / a.points if a.points > 0 else 0
+                    total_weight += a.points
+                    weight_score_sum += grade_ratio * a.weight
+                    my_graded = f"{grade_ratio * 100:.2f}%"
                 else:
                     my_graded = "Ungraded"
                 
@@ -297,7 +301,7 @@ def profile(request):
     # calculate final grade
     final_grade = 0
     if my_user.is_authenticated and not is_ta:
-        final_grade = f"{(my_total_points / total_max_points) * 100:.2f}%"
+        final_grade = f"{(weight_score_sum / total_weight) * 100:.2f}%"
 
     # Call template
     context = {

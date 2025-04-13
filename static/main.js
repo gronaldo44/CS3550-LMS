@@ -111,3 +111,95 @@ if (form){
         make_form_async(form);
     });
 }
+
+function make_grade_hypothesized(table){
+    // Create the button
+    const button = document.createElement("button");
+    button.innerText = "Hypothesize";
+    const parent = table.parentElement;
+    parent.insertBefore(button, table);
+    const cells = table.querySelectorAll("td.col_num");
+
+    // Add onclick functionality
+    button.addEventListener("click", () => {
+        if (table.classList.contains("hypothesized")){
+            table.classList.remove("hypothesized");
+            button.innerText = "Hypothesize";
+        } else {
+            table.classList.add("hypothesized");
+            button.innerText = "Actual Grades";
+        }
+
+        cells.forEach(cell => {
+            if (table.classList.contains("hypothesized")){
+                const text = cell.textContent.trim();
+                if (text === "Not Due" || text === "Ungraded"){
+                    cell.setAttribute("data", text);
+                    cell.textContent = "";
+
+                    const input = document.createElement("input");
+                    input.type = "number";
+                    input.classList.add("hypothesis-input");
+                    input.addEventListener("keyup", () => _compute_grade(cells));
+                    cell.appendChild(input);
+                }
+            } else {
+                const input = cell.querySelector("input.hypothesis-input");
+                if (input){
+                    const originalText = cell.getAttribute("data");
+                    cell.textContent = originalText;
+                    cell.removeAttribute("data");
+                }
+            }
+        });
+
+        _compute_grade(cells);
+    });
+}
+const gradesTable = document.querySelector("#student-grades");
+if (gradesTable){
+    make_grade_hypothesized(gradesTable)
+}
+function _compute_grade(cells) {
+    let weightedTotal = 0;
+    let totalWeight = 0;
+
+    cells.forEach(cell => {
+        const weight = parseFloat(cell.getAttribute("data-weight"));
+        if (isNaN(weight)) return; 
+
+        let score = null;
+        const input = cell.querySelector("input.hypothesis-input");
+        if (input) {
+            const val = parseFloat(input.value);
+            if (!isNaN(val)) {
+                score = val;
+            }
+        } else {
+            const text = cell.textContent.trim();
+            if (text === "Missing") {
+                score = 0;
+            } else {
+                const match = text.match(/^(\d+(?:\.\d+)?)%$/); // matches % nums
+                if (match) {
+                    score = parseFloat(match[1]);
+                }
+            }
+        }
+
+        if (score !== null) {
+            weightedTotal += score * weight;
+            totalWeight += weight;
+        }
+    });
+
+    const finalGradeCell = document.querySelector("tfoot.current_grade td.col_num");
+    if (finalGradeCell) {
+        if (totalWeight > 0) {
+            const finalGrade = (weightedTotal / totalWeight).toFixed(2);
+            finalGradeCell.textContent = `${finalGrade}%`;
+        } else {
+            finalGradeCell.textContent = "N/A";
+        }
+    }
+}

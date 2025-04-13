@@ -18,7 +18,7 @@
         {% endif %}
     </div>
     {% if is_logged_in %}
-    <table class="sortable">
+    <table {% if not is_ta %}id="student-grades"{% endif %} class="sortable">
         <thead>
             <tr>
                 <th>Assignment</th>
@@ -32,7 +32,7 @@
                 {% if is_ta %}
                 <td class="col_num">{{ data.my_graded }}/{{ data.my_submissions }}</td>
                 {% else %}
-                <td class="col_num">{{ data.my_graded }}</td>
+                <td data-weight="{{ data.assignment.weight }}" class="col_num">{{ data.my_graded }}</td>
                 {% endif %}
             </tr>
             {% endfor %}

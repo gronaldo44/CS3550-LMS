@@ -162,3 +162,8 @@ input:invalid {
 .current_grade td{
     font-weight: 700;
 }
+
+/* Homework 6 changes here */
+th.sort-column { cursor: pointer; }
+th.sort-asc::after { content: " \25b2"; }
+th.sort-desc::after { content: " \25bc"; }

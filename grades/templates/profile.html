@@ -22,12 +22,12 @@
         <thead>
             <tr>
                 <th>Assignment</th>
-                <th class="col_num">Graded</th>
+                <th class="col_num sort-column">Graded</th>
             </tr>
         </thead>
         <tbody>
             {% for data in assignments_data %}
-            <tr>
+            <tr data-index="{{ forloop.counter }}">
                 <td><a href="/{{ data.assignment.id }}/">{{ data.assignment.title }}</a></td>
                 {% if is_ta %}
                 <td class="col_num">{{ data.my_graded }}/{{ data.my_submissions }}</td>

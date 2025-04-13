@@ -10,19 +10,19 @@
 </header>
 
 <main>
-    <table>
+    <table class="sortable">
         <thead>
             <tr>
                 <th>Assignment</th>
-                <th>Due date</th>
-                <th class="col_num">Weight</th>
+                <th class="sort-column">Due date</th>
+                <th class="col_num sort-column">Weight</th>
             </tr>
         </thead>
         <tbody>
             {% for a in assignments %}
-            <tr>
+            <tr data-index="{{ forloop.counter }}">
                 <td><a href="/{{ a.id }}/">{{ a.title }}</a></td>
-                <td>{{ a.deadline|date:"M d" }}</td>
+                <td data-value="{{ a.deadline|date:'U' }}">{{ a.deadline|date:"M d" }}</td>
                 <td class="col_num">{{ a.weight }}</td>
             </tr>
             {% endfor %}

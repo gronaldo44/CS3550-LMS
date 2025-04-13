@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render
-from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -30,10 +30,9 @@ def assignment(request, assignment_id):
     # Handle submit-assignment form POSTs
     if request.method == "POST":
         result = _submit_assignment(request, assignment_id)
-        if isinstance(result, HttpResponse):
+        if isinstance(result, JsonResponse):
             return result
         return redirect(f"/{assignment_id}/")
-    
 
     a = get_object_or_404(models.Assignment, id=assignment_id)
     my_user = request.user
@@ -102,7 +101,7 @@ def _submit_assignment(request, assignment_id):
     
     # check if this assignment is still accepting submissions
     if a.deadline < timezone.now():
-        return HttpResponseBadRequest
+        return JsonResponse({"error": "Submission deadline has passed"}, status=400)
     
     # get user's submissions to this assignment
     my_user = request.user
@@ -111,15 +110,8 @@ def _submit_assignment(request, assignment_id):
     
     # check for invalid files
     error = _is_pdf(new_submission_file)
-    # rerender the page if an error occurred
     if error:
-        context = {
-            "assignment": a,
-            "error": error,
-            "is_accepting_student_submission": a.deadline > timezone.now(),
-            "is_student": request.user.is_authenticated and _is_student(request.user)
-        }
-        return render(request, "assignment.html", context)
+        return JsonResponse({"error": error}, status=400)
     
     # Put new submission in the database
     if my_user_old_submissions.exists():
@@ -127,8 +119,8 @@ def _submit_assignment(request, assignment_id):
         my_user_submission = my_user_old_submissions[0]
         logging.getLogger(__name__).warning(
             f"Updating existing submission {my_user_submission.file.name.split('/')[-1]}"
-            f"to {new_submission_file.name.split('/')[-1]}"
-            )
+            f" to {new_submission_file.name.split('/')[-1]}"
+        )
         my_user_submission.file = new_submission_file
         my_user_submission.save()
     else:
@@ -138,13 +130,16 @@ def _submit_assignment(request, assignment_id):
             f"Creating new submission {new_submission_file.name.split('/')[-1]}"
         )
         new_submission = models.Submission.objects.create(
-            assignment = a,
-            author = my_user,
-            grader = my_grader,
-            file = request.FILES['assignment-submission'],
-            score = None
+            assignment=a,
+            author=my_user,
+            grader=my_grader,
+            file=new_submission_file,
+            score=None
         )
         new_submission.save()
+    
+    # Return a success response as JSON
+    return JsonResponse({"message": "Assignment submitted successfully"})
         
 def _pick_grader(assignment):
     ta_group = Group.objects.get(name="Teaching Assistants")

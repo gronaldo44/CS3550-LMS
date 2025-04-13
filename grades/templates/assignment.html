@@ -20,7 +20,7 @@
         <p>{{ student_submission_status_prefix }}</p>
         {% endif %}
         {% if is_accepting_student_submission %}
-        <form action="/{{ assignment.id }}/" method="post" enctype="multipart/form-data">
+        <form id="submit-assignment-form" action="/{{ assignment.id }}/" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <output>{{ error }}</output>
             <table>

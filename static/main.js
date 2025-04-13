@@ -73,5 +73,41 @@ function make_table_sortable(table) {
         });
     });
 }
+const sortableTable = document.querySelector("table.sortable");
+if (sortableTable){
+    make_table_sortable(sortableTable)
+}
 
-make_table_sortable(document.querySelector("table.sortable"));
+async function make_form_async(form) {
+    const formData = new FormData(form);
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const output = form.querySelector("output");
+
+    try {
+        const response = await fetch(form.action, {
+            method: form.method,
+            headers: {
+                "X-CSRFToken": csrfToken
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || "Something went wrong.");
+        }
+
+        // Display success message or data if submission is successful
+        output.textContent = data.message;
+    } catch (e) {
+        // Show error message in case of failure
+        output.textContent = `Error: ${e.message}`;
+    }
+}
+const form = document.querySelector("#submit-assignment-form");
+if (form){
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        make_form_async(form);
+    });
+}
